@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Attendance</string>
+    <string name="QR">Scan QR Code</string>
+    <string name="ADMIN_TAG">Admin</string>
 </resources>
