@@ -13,11 +13,20 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+
+import org.openqa.selenium.remote.DesiredCapabilities;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+
+import io.appium.java_client.android.AndroidDriver;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     private ListView displayAbsentRoll = null;
     private ArrayList<Integer> absentRollNumbers = new ArrayList<>();
     private ArrayAdapter<Integer> adapter;
+    private AndroidDriver driver;
+    DesiredCapabilities capabilities = new DesiredCapabilities();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         Button qrButton = findViewById(R.id.qr_code);
         absentRollInput = findViewById(R.id.input_absent);
         displayAbsentRoll = findViewById(R.id.display_absent);
-
+        capabilities.setCapability("platformName" , "Android");
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, absentRollNumbers);
         displayAbsentRoll.setAdapter(adapter);
         qrButton.setOnClickListener(new View.OnClickListener() {
@@ -81,8 +92,20 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode,resultCode, data);
-        if(scanResult != null){
+        if(scanResult.getContents() != null){
+            inputForm(scanResult.getContents());
             Log.v(ADMIN_TAG, scanResult.toString());
+        }
+    }
+
+    private void inputForm(String webURL){
+        try {
+            driver = new AndroidDriver(new URL("http://172.23.67.106:4723/"), capabilities);
+            driver.get(webURL);
+            Log.v(ADMIN_TAG, driver.toString());
+            driver.close();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
         }
     }
 }
