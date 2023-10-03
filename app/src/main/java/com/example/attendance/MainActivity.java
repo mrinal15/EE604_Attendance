@@ -1,6 +1,9 @@
+//TODO: Check the endpoints
+
 package com.example.attendance;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -13,10 +16,17 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText absentRollInput = null;
     private ListView displayAbsentRoll = null;
     private ArrayList<Integer> absentRollNumbers = new ArrayList<>();
+    private String yourRollNumber = "200600";
     private ArrayAdapter<Integer> adapter;
 
     @Override
@@ -52,11 +63,9 @@ public class MainActivity extends AppCompatActivity {
                 if (i == EditorInfo.IME_ACTION_DONE) {
                     Log.v(ADMIN_TAG, absentRollInput.getText().toString());
                     Integer absentee = Integer.parseInt(absentRollInput.getText().toString());
-                    if( absentee > 200000 && absentee < 220000) {
-                        absentRollNumbers.add(absentee);
-                        adapter.notifyDataSetChanged();
-                        Log.d(ADMIN_TAG, absentRollNumbers.toString());
-                    }
+                    absentRollNumbers.add(absentee);
+                    adapter.notifyDataSetChanged();
+                    Log.d(ADMIN_TAG, absentRollNumbers.toString());
                     absentRollInput.getText().clear();
                     return true;
                 }
@@ -83,6 +92,62 @@ public class MainActivity extends AppCompatActivity {
         IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode,resultCode, data);
         if(scanResult != null){
             Log.v(ADMIN_TAG, scanResult.toString());
+            postMessage(scanResult, absentRollNumbers, yourRollNumber);
+        }
+    }
+
+    private void postMessage(IntentResult scanResult, ArrayList<Integer> absentRollNumbers, String yourRollNumber) {
+        String qrCodeContent = scanResult.getContents();
+        if (isValidURL(qrCodeContent)) {
+            for(int rollNumber : absentRollNumbers){
+                new PostDataTask(rollNumber).execute(qrCodeContent);
+            }
+        }
+    }
+    private class PostDataTask extends AsyncTask<String, Void, Integer> {
+
+        private int rollNumber;
+
+        public PostDataTask(int rollNumber){
+            this.rollNumber = rollNumber;
+        }
+        @Override
+        protected Integer doInBackground(String... params) {
+            try {
+                String formData = "entry.1927997503="+ rollNumber + "&entry.698650085=" + 200600;
+                URL url = new URL(params[0]);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+
+                OutputStream os = connection.getOutputStream();
+                os.write(formData.getBytes());
+                os.flush();
+                os.close();
+
+                return connection.getResponseCode();
+            } catch (Exception e) {
+                Log.e(ADMIN_TAG, "Error in POST Message: " + e.getMessage());
+                return -1; // Return an error code or value
+            }
+        }
+        @Override
+        protected void onPostExecute(Integer responseCode) {
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                Log.d(ADMIN_TAG, "POST request successful");
+            } else {
+                Log.e(ADMIN_TAG, "POST request failed. Response code: " + responseCode);
+            }
+        }
+    }
+
+    private boolean isValidURL(String url){
+        try{
+            new URL(url);
+            return true;
+        } catch (MalformedURLException e) {
+            return false;
         }
     }
 }
+
