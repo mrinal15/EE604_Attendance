@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Integer doInBackground(String... params) {
             try {
-                String formData = "entry.1927997503="+ rollNumber + "&entry.698650085=" + 200600;
+                String formData = "entry.1927997503="+ 200600 + "&entry.698650085=" + rollNumber;
                 URL url = new URL(params[0]);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
